@@ -1,0 +1,189 @@
+config-version: 2
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  database: 0
+  username: ""
+  password: ""
+  ssl: false
+  key-prefix: "hera"
+  environment: "prod"
+  server-id: "velocity-1"
+
+party:
+  invite-expiration: "60s"
+  disband-when-empty: true
+  transfer-leader-on-disconnect: true
+  chat-max-length: 512
+
+limits:
+  party-size:
+    default: 4
+    permissions:
+      - permission: "partysystem.limit.default"
+        limit: 4
+      - permission: "partysystem.limit.vip"
+        limit: 6
+      - permission: "partysystem.limit.elite"
+        limit: 8
+      - permission: "partysystem.limit.hera"
+        limit: 12
+
+commands:
+  primary: "party"
+  aliases:
+    - "p"
+    - "parties"
+  party-chat-aliases:
+    - "pc"
+  suggestions:
+    cache-ttl: "5s"
+    empty-input-max-results: 20
+    filtered-max-results: 50
+
+cooldowns:
+  invite: "750ms"
+  list: "750ms"
+  chat: "250ms"
+  togglechat: "1s"
+
+cache:
+  movement-cause-ttl: "5s"
+  luckperms-snapshot-ttl: "2m"
+
+snapshots:
+  ttl: "120s"
+  heartbeat: "30s"
+
+display:
+  player-identity-format: "<player_prefix><country_flag> <player_nick>"
+  party-chat-format: "<dark_gray>[</dark_gray><gradient:#8ec5ff:#e0c3fc>Party</gradient><dark_gray>]</dark_gray> <player_identity><gray>:</gray> <message>"
+
+follow:
+  enabled: true
+  anti-loop-ttl: "5s"
+  destinations: {}
+
+feedback:
+  actions:
+    invite-received:
+      outputs:
+        - type: CHAT
+          message: "invite.received"
+        - type: ACTION_BAR
+          message: "invite.actionbar"
+        - type: SOUND
+          sound: "minecraft:block.note_block.pling"
+          source: "MASTER"
+          volume: 1.0
+          pitch: 1.4
+    invite-sent:
+      outputs:
+        - type: CHAT
+          message: "invite.sent"
+    invite-accepted:
+      outputs:
+        - type: CHAT
+          message: "invite.accepted"
+    invite-accepted-target:
+      outputs:
+        - type: CHAT
+          message: "invite.accepted-target"
+    invite-denied:
+      outputs:
+        - type: CHAT
+          message: "invite.denied"
+    invite-denied-target:
+      outputs:
+        - type: CHAT
+          message: "invite.denied-target"
+    invite-withdrawn:
+      outputs:
+        - type: CHAT
+          message: "invite.withdrawn"
+    party-created:
+      outputs:
+        - type: CHAT
+          message: "party.created"
+    party-left:
+      outputs:
+        - type: ACTION_BAR
+          message: "party.left"
+        - type: SOUND
+          sound: "minecraft:block.note_block.pling"
+          source: "MASTER"
+          volume: 1.0
+          pitch: 1.2
+    member-joined:
+      outputs:
+        - type: CHAT
+          message: "party.member-joined"
+    member-left:
+      outputs:
+        - type: CHAT
+          message: "party.member-left"
+    member-kicked:
+      outputs:
+        - type: CHAT
+          message: "party.member-kicked"
+    member-kicked-target:
+      outputs:
+        - type: CHAT
+          message: "party.kicked-target"
+        - type: SOUND
+          sound: "minecraft:block.note_block.bass"
+          source: "MASTER"
+          volume: 1.0
+          pitch: 0.8
+    leader-transferred:
+      outputs:
+        - type: CHAT
+          message: "party.leader-transferred"
+    party-disbanded:
+      outputs:
+        - type: CHAT
+          message: "party.disbanded"
+    party-chat-toggled:
+      outputs:
+        - type: CHAT
+          message: "chat.toggled"
+    command-cooldown:
+      outputs:
+        - type: ACTION_BAR
+          message: "cooldown"
+    party-full:
+      outputs:
+        - type: CHAT
+          message: "party.full"
+        - type: SOUND
+          sound: "minecraft:block.note_block.bass"
+          source: "MASTER"
+          volume: 1.0
+          pitch: 0.8
+    party-not-in-party:
+      outputs:
+        - type: ACTION_BAR
+          message: "party.not-in-party"
+    party-not-leader:
+      outputs:
+        - type: ACTION_BAR
+          message: "party.not-leader"
+    party-chat-error:
+      outputs:
+        - type: ACTION_BAR
+          message: "chat.error"
+
+debug:
+  enabled: false
+  include-stacktraces: false
+  categories:
+    lifecycle: true
+    invites: true
+    commands: true
+    chat: true
+    follow: true
+    snapshots: true
+    redis: true
+    permissions: true
+    autocomplete: false

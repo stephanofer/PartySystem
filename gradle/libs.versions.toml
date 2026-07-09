@@ -1,0 +1,32 @@
+[versions]
+velocity-api = "3.5.0-SNAPSHOT"
+luckperms-api = "5.5"
+proxysettings = "1.0"
+boosted-yaml = "1.3.7"
+caffeine = "3.2.4"
+gson = "2.13.2"
+craftkit-redis = "1.1.0"
+cloud-velocity = "2.0.0-beta.15"
+cloud-minecraft-extras = "2.0.0-beta.10"
+junit-jupiter = "5.14.1"
+junit-platform-launcher = "1.14.1"
+
+idea-ext = "1.4.1"
+shadow = "9.4.1"
+
+[libraries]
+velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-api" }
+luckperms-api = { module = "net.luckperms:api", version.ref = "luckperms-api" }
+proxysettings = { module = "com.stephanofer:proxysettings", version.ref = "proxysettings" }
+boosted-yaml = { module = "com.stephanofer.boostedyaml:boosted-yaml", version.ref = "boosted-yaml" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+craftkit-redis = { module = "com.hera.craftkit:craftkit-redis", version.ref = "craftkit-redis" }
+cloud-velocity = { module = "org.incendo:cloud-velocity", version.ref = "cloud-velocity" }
+cloud-minecraft-extras = { module = "org.incendo:cloud-minecraft-extras", version.ref = "cloud-minecraft-extras" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform-launcher" }
+
+[plugins]
+idea-ext = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "idea-ext" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
