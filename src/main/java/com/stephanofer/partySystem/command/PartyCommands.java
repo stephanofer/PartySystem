@@ -60,10 +60,6 @@ public final class PartyCommands {
             .permission("partysystem.command.party")
             .handler(context -> this.help(context.sender(), root)));
         this.manager.command(this.manager.commandBuilder(root)
-            .literal("create")
-            .permission("partysystem.command.party")
-            .handler(context -> this.player(context.sender(), this.parties::create)));
-        this.manager.command(this.manager.commandBuilder(root)
             .literal("invite")
             .required("player", stringParser(), this.onlineInviteSuggestions())
             .permission("partysystem.command.party")
@@ -178,7 +174,6 @@ public final class PartyCommands {
     private void help(CommandSource source, String root) {
         Map<String, String> placeholders = Map.ofEntries(
             Map.entry("command", root),
-            Map.entry("create_command", "/" + root + " create"),
             Map.entry("invite_command", "/" + root + " invite "),
             Map.entry("accept_command", "/" + root + " accept "),
             Map.entry("deny_command", "/" + root + " deny "),
@@ -194,7 +189,7 @@ public final class PartyCommands {
         );
         Language language = source instanceof Player player ? this.proxySettings.language(player) : Language.EN;
         source.sendMessage(this.messages.component(language, "help.header", placeholders));
-        for (String key : List.of("help.create", "help.invite", "help.accept", "help.deny", "help.withdraw", "help.pending", "help.list", "help.leave", "help.kick", "help.transfer", "help.disband", "help.chat", "help.togglechat")) {
+        for (String key : List.of("help.invite", "help.accept", "help.deny", "help.withdraw", "help.pending", "help.list", "help.leave", "help.kick", "help.transfer", "help.disband", "help.chat", "help.togglechat")) {
             source.sendMessage(this.messages.component(language, key, placeholders));
         }
     }

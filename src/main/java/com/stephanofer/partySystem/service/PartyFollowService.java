@@ -48,11 +48,11 @@ public final class PartyFollowService {
             ));
             return;
         }
-        if (!this.destinations.socialFollowable(targetServerId)) {
+        if (!this.destinations.followAllowed(targetServerId)) {
             this.debug.follow("Party follow skipped", Map.of(
                 "player", player.getUsername(),
                 "target", targetServerId,
-                "reason", "destination-not-followable"
+                "reason", "destination-not-allowed"
             ));
             return;
         }

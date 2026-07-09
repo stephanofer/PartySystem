@@ -1,4 +1,4 @@
-config-version: 2
+config-version: 3
 
 redis:
   host: "127.0.0.1"
@@ -13,7 +13,6 @@ redis:
 
 party:
   invite-expiration: "60s"
-  disband-when-empty: true
   transfer-leader-on-disconnect: true
   chat-max-length: 512
 
@@ -63,7 +62,7 @@ display:
 follow:
   enabled: true
   anti-loop-ttl: "5s"
-  destinations: {}
+  destinations: []
 
 feedback:
   actions:
@@ -102,10 +101,6 @@ feedback:
       outputs:
         - type: CHAT
           message: "invite.withdrawn"
-    party-created:
-      outputs:
-        - type: CHAT
-          message: "party.created"
     party-left:
       outputs:
         - type: ACTION_BAR
@@ -144,6 +139,15 @@ feedback:
       outputs:
         - type: CHAT
           message: "party.disbanded"
+    party-disbanded-alone:
+      outputs:
+        - type: ACTION_BAR
+          message: "party.disbanded-alone"
+        - type: SOUND
+          sound: "minecraft:block.note_block.bass"
+          source: "MASTER"
+          volume: 1.0
+          pitch: 0.8
     party-chat-toggled:
       outputs:
         - type: CHAT

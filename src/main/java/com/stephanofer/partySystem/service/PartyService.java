@@ -89,31 +89,6 @@ public final class PartyService {
         return List.copyOf(this.outgoingInvitesBySender.getOrDefault(sender, List.of()));
     }
 
-    public void create(Player player) {
-        Language language = this.proxySettings.language(player);
-        synchronized (this) {
-            if (this.partyIdByPlayer.containsKey(player.getUniqueId())) {
-                send(player, language, "party.already-in-party");
-                return;
-            }
-        }
-        this.member(player, PartyRole.LEADER).thenAccept(member -> {
-            Party party;
-            synchronized (this) {
-                if (this.partyIdByPlayer.containsKey(player.getUniqueId())) {
-                    send(player, language, "party.already-in-party");
-                    return;
-                }
-                party = new Party(newPartyId(), member, Instant.now());
-                this.partyById.put(party.id(), party);
-                this.partyIdByPlayer.put(player.getUniqueId(), party.id());
-            }
-            this.publishSnapshot(party);
-            this.feedback.send(player, language, "party-created", Map.of());
-            this.debug.lifecycle("Party created", Map.of("party", party.id(), "leader", player.getUsername()));
-        });
-    }
-
     public void invite(Player sender, String targetName) {
         Language language = this.proxySettings.language(sender);
         Duration remaining = this.cooldowns.invite(sender.getUniqueId());
@@ -307,7 +282,7 @@ public final class PartyService {
             wasLeader = party.leader(player.getUniqueId());
             removed = party.removeMember(player.getUniqueId(), Instant.now()).orElse(null);
             this.partyIdByPlayer.remove(player.getUniqueId());
-            if (party.size() == 0) {
+            if (party.size() <= 1) {
                 this.partyById.remove(party.id());
             } else if (wasLeader) {
                 party.oldestOnlineMemberExcept(player.getUniqueId()).ifPresent(newLeader -> party.transferLeader(newLeader.uuid(), Instant.now()));
@@ -461,7 +436,7 @@ public final class PartyService {
             wasLeader = party.leader(player.getUniqueId());
             removed = party.removeMember(player.getUniqueId(), Instant.now()).orElse(null);
             this.partyIdByPlayer.remove(player.getUniqueId());
-            if (party.size() == 0) {
+            if (party.size() <= 1) {
                 this.partyById.remove(party.id());
             } else if (wasLeader && this.config.party().transferLeaderOnDisconnect()) {
                 party.oldestOnlineMemberExcept(player.getUniqueId()).ifPresent(newLeader -> party.transferLeader(newLeader.uuid(), Instant.now()));
@@ -537,8 +512,13 @@ public final class PartyService {
                 this.chat.clear(removed.uuid());
             }
         }
-        if (party.size() == 0) {
+        if (party.size() <= 1) {
+            List<PartyMember> remaining = party.members();
+            this.removeParty(party);
             this.snapshots.delete(party);
+            for (PartyMember member : remaining) {
+                this.server.getPlayer(member.uuid()).ifPresent(player -> this.feedback.send(player, this.proxySettings.language(player), "party-disbanded-alone", Map.of()));
+            }
             return;
         }
         this.publishSnapshot(party);

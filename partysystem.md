@@ -17,7 +17,7 @@ PartySystem es responsable de:
 - saber quien pertenece a quien;
 - publicar snapshots runtime en Redis;
 - aplicar party-follow en navegacion social/global;
-- mover miembros seguidores cuando el leader entra a destinos followables.
+- mover miembros seguidores cuando el leader entra a destinos permitidos para follow.
 
 PartySystem no es responsable de:
 
@@ -68,29 +68,27 @@ El plugin del lobby global mueve solo a Stephano a bedwars-lobby-01.
 Despues entra PartySystem:
 
 1. PartySystem escucha en Velocity que Stephano cambio de server.
-2. Detecta que `bedwars-lobby-01` es un destino followable.
+2. Detecta que `bedwars-lobby-01` es un destino permitido para follow.
 3. Verifica que Stephano es leader o que la party policy permite follow.
 4. Verifica que Cristian esta en la party y es transferible.
 5. Mueve a Cristian a `bedwars-lobby-01`.
 
 Este flujo no necesita admission de modalidad porque todavia no se esta entrando a una queue, waiting room, match o spectator. Es solo navegacion social hacia un lobby.
 
-## Destinos Followables
+## Destinos Permitidos Para Follow
 
 PartySystem no debe seguir cualquier cambio de servidor del leader.
 
-Debe tener una configuracion o registry de destinos followables. Solo esos destinos pueden activar party-follow.
+Debe tener una configuracion o registry de destinos permitidos. Solo esos destinos pueden activar party-follow.
 
 Ejemplo conceptual:
 
 ```yaml
-follow-destinations:
-  bedwars-lobby-01:
-    type: modality_lobby
-    game: bedwars
-  skywars-lobby-01:
-    type: modality_lobby
-    game: skywars
+follow:
+  destinations:
+    - global-lobby-01
+    - bedwars-lobby-01
+    - skywars-lobby-01
 ```
 
 Reglas:
@@ -128,17 +126,15 @@ Tabla final:
 | Spectate match | No | La modalidad valida spectator policy. |
 | Fallback/kick tecnico | No | Evita loops y estados corruptos. |
 
-PartySystem debe clasificar cada cambio antes de mover followers.
+PartySystem debe validar cada cambio antes de mover followers.
 
-Criterios de clasificacion:
+Criterios de validacion:
 
-1. El destino debe existir en `follow-destinations`.
-2. El destino debe tener tipo social, por ejemplo `global_lobby` o `modality_lobby`.
-3. El destino no puede tener rol de gameplay, por ejemplo `arena`, `waiting_room`, `match`, `spectator` o `reconnect`.
-4. El cambio no puede haber sido causado por el propio PartySystem dentro de una ventana anti-loop.
-5. Si existe una marca/admission activa de modalidad para ese jugador y destino, PartySystem debe ignorar el cambio.
+1. El destino debe existir en `follow.destinations`.
+2. El cambio no puede haber sido causado por el propio PartySystem dentro de una ventana anti-loop.
+3. Si existe una marca/admission activa de modalidad para ese jugador y destino, PartySystem debe ignorar el cambio.
 
-Con esto, PartySystem no necesita entender como funciona BedWars o SkyWars. Solo necesita saber si el servidor destino es followable o si pertenece a un flujo de gameplay.
+Con esto, PartySystem no necesita entender como funciona BedWars o SkyWars. Solo necesita saber si el servidor destino esta permitido para party-follow social.
 
 ## Modalidad A Waiting Room O Match
 
@@ -280,7 +276,7 @@ Cristian acepta invitacion de party.
 Flujo seguro:
 
 1. PartySystem actualiza la party y publica snapshot.
-2. PartySystem detecta que el leader esta en un destino no followable de gameplay.
+2. PartySystem detecta que el leader esta en un destino de gameplay que no esta permitido en `follow.destinations`.
 3. PartySystem no mueve automaticamente a Cristian.
 4. Si existe una policy de follow-spectator, PartySystem puede emitir una intencion social.
 5. La modalidad valida si Cristian puede spectatear ese match.
@@ -314,7 +310,7 @@ Reglas:
 
 | Caso | Resultado correcto |
 | --- | --- |
-| Leader cambia a lobby de modalidad followable | PartySystem mueve miembros transferibles segun policy. |
+| Leader cambia a lobby de modalidad permitido | PartySystem mueve miembros transferibles segun policy. |
 | Leader cambia a arena server | PartySystem no hace follow. |
 | Movimiento tiene admission de modalidad | PartySystem no hace follow. |
 | Miembro esta offline | No se incluye en entrada normal a queue. |
@@ -333,8 +329,8 @@ El equipo PartySystem debe entregar:
 - plugin Velocity principal;
 - lifecycle completo de party: invite, accept, leave, kick, disband, leader change;
 - deteccion de server actual de cada miembro;
-- party-follow hacia destinos followables;
-- configuracion/registry de destinos followables;
+- party-follow hacia destinos permitidos;
+- configuracion/registry de destinos permitidos;
 - proteccion anti-loop para movimientos causados por PartySystem;
 - snapshots Redis por jugador y por party;
 - TTL, cleanup y actualizacion de snapshots;
@@ -357,13 +353,13 @@ El equipo PartySystem debe entregar:
 
 PartySystem integra la red social de parties con las modalidades mediante dos responsabilidades claras:
 
-1. Para navegacion social, observa movimientos del leader hacia destinos followables y mueve miembros transferibles.
+1. Para navegacion social, observa movimientos del leader hacia destinos permitidos y mueve miembros transferibles.
 2. Para gameplay, publica snapshots en Redis para que la modalidad valide y mueva al grupo con sus propias reglas.
 
 La frontera final es simple:
 
 ```text
-PartySystem mueve followers hacia lobbies followables.
+PartySystem mueve followers hacia lobbies permitidos.
 Las modalidades mueven jugadores hacia gameplay validado.
 Redis es el puente de informacion entre ambos.
 ```

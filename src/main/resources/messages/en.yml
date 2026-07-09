@@ -1,8 +1,7 @@
-config-version: 2
+config-version: 3
 
 help.header: "<gradient:#8ec5ff:#e0c3fc><bold>PartySystem</bold></gradient> <dark_gray>·</dark_gray> <gray>Party commands</gray>"
-help.create: "<click:run_command:'{create_command}'><hover:show_text:'<aqua>Create a party'><dark_gray>•</dark_gray> <aqua>/{command} create</aqua> <gray>Create a party.</gray></hover></click>"
-help.invite: "<click:suggest_command:'{invite_command}'><hover:show_text:'<aqua>Invite player'><dark_gray>•</dark_gray> <aqua>/{command} invite <player></aqua> <gray>Invite to your party.</gray></hover></click>"
+help.invite: "<click:suggest_command:'{invite_command}'><hover:show_text:'<aqua>Invite player'><dark_gray>•</dark_gray> <aqua>/{command} invite <player></aqua> <gray>Invite and create a party on accept.</gray></hover></click>"
 help.accept: "<click:suggest_command:'{accept_command}'><hover:show_text:'<green>Accept invite'><dark_gray>•</dark_gray> <aqua>/{command} accept <player></aqua> <gray>Accept invite.</gray></hover></click>"
 help.deny: "<click:suggest_command:'{deny_command}'><hover:show_text:'<red>Deny invite'><dark_gray>•</dark_gray> <aqua>/{command} deny <player></aqua> <gray>Deny invite.</gray></hover></click>"
 help.withdraw: "<click:suggest_command:'{withdraw_command}'><hover:show_text:'<yellow>Withdraw invite'><dark_gray>•</dark_gray> <aqua>/{command} withdraw <player></aqua> <gray>Withdraw sent invite.</gray></hover></click>"
@@ -20,7 +19,6 @@ cooldown: "<yellow>Wait <white>{seconds}s</white> before using that again.</yell
 player.not-found: "<red>I could not find <white>{player_name}</white>.</red>"
 player.self: "<red>You cannot do that with yourself.</red>"
 
-party.created: "<green>You created a party.</green>"
 party.already-in-party: "<red>You are already in a party.</red>"
 party.not-in-party: "<red>You are not in a party.</red>"
 party.target-in-party: "<red><player_identity> <red>is already in a party.</red>"
@@ -34,6 +32,7 @@ party.member-kicked: "<yellow><player_identity> <yellow>was kicked from the part
 party.kicked-target: "<red>You were kicked from the party.</red>"
 party.leader-transferred: "<green><player_identity> <green>is now the party leader.</green>"
 party.disbanded: "<red>The party was disbanded.</red>"
+party.disbanded-alone: "<yellow>The party was disbanded because you were left alone.</yellow>"
 party.list-header: "<gradient:#8ec5ff:#e0c3fc><bold>Party</bold></gradient> <gray>{count}/{limit} members</gray> <dark_gray>·</dark_gray> <gray>Leader:</gray> <player_identity>"
 party.list-entry: "<dark_gray>•</dark_gray> <player_identity> <dark_gray>·</dark_gray> <aqua>{role}</aqua> <dark_gray>·</dark_gray> <gray>{state}</gray> <dark_gray>·</dark_gray> <gray>{server}</gray>"
 party.limit-owner: "<gray>Leader limit:</gray> <white>{limit}</white>"

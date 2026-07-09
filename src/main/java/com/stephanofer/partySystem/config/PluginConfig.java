@@ -63,12 +63,11 @@ public record PluginConfig(
                 ),
                 new Party(
                     duration(document.getString("party.invite-expiration")),
-                    document.getBoolean("party.disband-when-empty", true),
                     document.getBoolean("party.transfer-leader-on-disconnect", true),
                     positive(document.getInt("party.chat-max-length"), 512)
                 ),
                 new Limits(new LimitGroup(
-                    positive(document.getInt("limits.party-size.default"), positive(document.getInt("party.max-size"), 4)),
+                    positive(document.getInt("limits.party-size.default"), 4),
                     permissionLimits(document, "limits.party-size.permissions")
                 )),
                 new Commands(
@@ -153,21 +152,12 @@ public record PluginConfig(
         return List.copyOf(labels);
     }
 
-    private static Map<String, FollowDestinationConfig> followDestinations(YamlDocument document) {
-        if (!document.isSection("follow.destinations")) {
-            return Map.of();
-        }
-        Map<String, FollowDestinationConfig> destinations = new HashMap<>();
-        for (Object key : document.getSection("follow.destinations").getKeys()) {
-            String server = String.valueOf(key);
-            String path = "follow.destinations." + server;
-            destinations.put(server, new FollowDestinationConfig(
-                document.getString(path + ".type", "UNKNOWN"),
-                document.getString(path + ".game", ""),
-                document.getBoolean(path + ".followable", false)
-            ));
-        }
-        return Map.copyOf(destinations);
+    private static List<String> followDestinations(YamlDocument document) {
+        return document.getStringList("follow.destinations", List.of()).stream()
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .distinct()
+            .toList();
     }
 
     private static Map<String, FeedbackAction> feedbackActions(YamlDocument document) {
@@ -259,7 +249,7 @@ public record PluginConfig(
     }
 
     public record Redis(String host, int port, int database, String username, String password, boolean ssl, String keyPrefix, String environment, String serverId) {}
-    public record Party(Duration inviteExpiration, boolean disbandWhenEmpty, boolean transferLeaderOnDisconnect, int chatMaxLength) {}
+    public record Party(Duration inviteExpiration, boolean transferLeaderOnDisconnect, int chatMaxLength) {}
     public record Limits(LimitGroup partySize) {}
     public record LimitGroup(int defaultLimit, List<PermissionLimit> permissions) {}
     public record PermissionLimit(String permission, int limit) {}
@@ -269,8 +259,7 @@ public record PluginConfig(
     public record Cache(Duration movementCauseTtl, Duration luckPermsSnapshotTtl) {}
     public record Snapshots(Duration ttl, Duration heartbeat) {}
     public record Display(String playerIdentityFormat, String partyChatFormat) {}
-    public record Follow(boolean enabled, Duration antiLoopTtl, Map<String, FollowDestinationConfig> destinations) {}
-    public record FollowDestinationConfig(String type, String game, boolean followable) {}
+    public record Follow(boolean enabled, Duration antiLoopTtl, List<String> destinations) {}
     public record Feedback(Map<String, FeedbackAction> actions) {
         public FeedbackAction action(String key) {
             return this.actions.getOrDefault(key, FeedbackAction.chat(defaultMessage(key)));
@@ -285,7 +274,6 @@ public record PluginConfig(
                 case "invite-denied" -> "invite.denied";
                 case "invite-denied-target" -> "invite.denied-target";
                 case "invite-withdrawn" -> "invite.withdrawn";
-                case "party-created" -> "party.created";
                 case "party-left" -> "party.left";
                 case "member-joined" -> "party.member-joined";
                 case "member-left" -> "party.member-left";
@@ -293,6 +281,7 @@ public record PluginConfig(
                 case "member-kicked-target" -> "party.kicked-target";
                 case "leader-transferred" -> "party.leader-transferred";
                 case "party-disbanded" -> "party.disbanded";
+                case "party-disbanded-alone" -> "party.disbanded-alone";
                 case "party-chat-toggled" -> "chat.toggled";
                 case "command-cooldown" -> "cooldown";
                 case "party-full" -> "party.full";

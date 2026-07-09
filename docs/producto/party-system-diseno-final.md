@@ -37,7 +37,7 @@ PartySystem debe encargarse de:
 | Estado runtime | Mantener la vista actual de parties, miembros, leader, roles, invitaciones y server actual. |
 | UX social | Comandos, ayuda clickable, autocompletado contextual, feedback configurable y party chat. |
 | Redis | Publicar snapshots runtime read-only para modalidades. |
-| Party follow | Mover miembros seguidores solo hacia destinos sociales followables configurados. |
+| Party follow | Mover miembros seguidores solo hacia destinos sociales permitidos en configuracion. |
 | Idioma y estilos | Usar ProxySettings para idioma, bandera, nick style y chat style. |
 | Prefixes | Usar LuckPerms para resolver prefix y grupo primario cuando sea necesario. |
 | Debug | Entregar logs profesionales por categorias para detectar errores y explicar decisiones internas. |
@@ -128,7 +128,6 @@ src/main/java/com/stephanofer/partySystem/
     PlayerChatListener.java
 
   follow/
-    FollowDestination.java
     FollowDestinationRegistry.java
     MovementCauseTracker.java
 
@@ -195,14 +194,16 @@ No se implementara `OFFICER` en este diseno cerrado. Agrega superficie de permis
 
 ### Crear Party
 
-Un jugador puede crear party de dos formas:
+Una party no se crea manualmente. Una party existe solo cuando hay al menos dos jugadores.
 
-| Forma | Comportamiento |
-| --- | --- |
-| Comando explicito | Crea una party con el jugador como `LEADER`. |
-| Invite sin party existente | Se registra la invitacion; la party se materializa cuando el target acepta. |
+Flujo cerrado:
 
-La segunda forma evita obligar al jugador a crear primero y luego invitar. Si el target acepta, sender y target quedan en party con el sender como `LEADER`.
+1. Un jugador usa `/party invite <player>`.
+2. Si el sender no tiene party, solo se registra la invitacion pendiente.
+3. Cuando el target acepta, se materializa la party con sender como `LEADER` y target como `MEMBER`.
+4. Si el sender ya tiene party, el target entra a esa party al aceptar.
+
+No existe `/party create`. Evita parties fantasma de un solo jugador y reduce edge-cases de UX y lifecycle.
 
 ### Invitaciones
 
@@ -226,18 +227,24 @@ Al aceptar:
 4. Se crea o actualiza la party.
 5. Se publica snapshot Redis.
 6. Se notifica a sender, target y miembros existentes.
-7. No se mueve automaticamente al nuevo miembro si el leader esta en gameplay no followable.
+7. No se mueve automaticamente al nuevo miembro si el leader esta en gameplay no permitido en `follow.destinations`.
 
 ### Salir, Expulsar Y Disolver
 
 | Accion | Regla |
 | --- | --- |
-| `leave` de member | Sale, se notifica, se actualiza snapshot. |
-| `leave` de leader | Transfiere leader si quedan miembros; si no, disuelve. |
+| `leave` de member | Sale, se notifica y se actualiza snapshot si quedan 2+ miembros. Si queda 1 miembro, se disuelve. |
+| `leave` de leader | Transfiere leader si quedan 2+ miembros. Si queda 1 miembro, se disuelve. |
 | `kick` | Solo `LEADER`; no puede kickearse a si mismo desde `kick`. |
 | `disband` | Solo `LEADER`; elimina party y snapshots. |
-| Disconnect de member | Sale de la party y actualiza snapshots. |
-| Disconnect de leader | Transfiere leader al miembro online mas antiguo o disuelve si no quedan miembros. |
+| Disconnect de member | Sale de la party y actualiza snapshot si quedan 2+ miembros. Si queda 1 miembro, se disuelve. |
+| Disconnect de leader | Transfiere leader al miembro online mas antiguo si quedan 2+ miembros; si queda 1 miembro, se disuelve. |
+
+Regla central:
+
+```text
+Party minima = 2 jugadores.
+```
 
 ## Comandos
 
@@ -262,14 +269,12 @@ Arbol de comandos:
 | Comando | Uso |
 | --- | --- |
 | `/party` | Muestra ayuda clickable. |
-| `/party create` | Crea party explicitamente. |
-| `/party invite <player>` | Invita a un jugador online. |
+| `/party invite <player>` | Invita a un jugador online. Si acepta y el sender no tenia party, crea una party de 2 jugadores. |
 | `/party accept <player>` | Acepta invitacion recibida. |
 | `/party deny <player>` | Rechaza invitacion recibida. |
 | `/party withdraw <player>` | Retira invitacion enviada. |
 | `/party pending` | Lista invitaciones recibidas y enviadas. |
 | `/party list` | Lista miembros actuales. |
-| `/party status` | Muestra leader, miembros, roles, server y estado transferible. |
 | `/party leave` | Sale de la party. |
 | `/party kick <player>` | Expulsa miembro, solo leader. |
 | `/party transfer <player>` | Transfiere liderazgo. |
@@ -434,25 +439,16 @@ follow:
   enabled: true
   anti-loop-ttl: "5s"
   destinations:
-    global-lobby-01:
-      type: "GLOBAL_LOBBY"
-      game: "global"
-      followable: true
-    bedwars-lobby-01:
-      type: "MODALITY_LOBBY"
-      game: "bedwars"
-      followable: true
-    bedwars-arena-01:
-      type: "ARENA"
-      game: "bedwars"
-      followable: false
+    - global-lobby-01
+    - bedwars-lobby-01
+    - skywars-lobby-01
 ```
 
 Reglas:
 
 | Cambio detectado | Follow |
 | --- | --- |
-| Lobby global a lobby de modalidad | Si, si el destino esta configurado como followable. |
+| Lobby global a lobby de modalidad | Si, si el destino esta en `follow.destinations`. |
 | Lobby de modalidad a arena | No. |
 | Lobby de modalidad a waiting room | No. |
 | Arena a lobby por fin de match | No por defecto. |
@@ -601,7 +597,7 @@ invite-expired
 invite-not-found
 target-already-in-party
 member-not-found
-destination-not-followable
+destination-not-allowed
 movement-caused-by-party-system
 member-offline
 member-not-transferable
@@ -615,7 +611,7 @@ luckperms-unavailable
 Ejemplo de log util:
 
 ```text
-Party follow skipped player=Cristian uuid=<uuid> party=party_abc target=bedwars-arena-01 reason=destination-not-followable type=ARENA
+Party follow skipped player=Cristian uuid=<uuid> party=party_abc target=bedwars-arena-01 reason=destination-not-allowed
 ```
 
 La meta del debug no es imprimir mas. Es explicar rapidamente por que el sistema tomo una decision.
@@ -631,7 +627,7 @@ src/main/resources/config.yml
 Estructura base:
 
 ```yaml
-config-version: 1
+config-version: 3
 
 redis:
   host: "127.0.0.1"
@@ -646,9 +642,21 @@ redis:
 
 party:
   invite-expiration: "60s"
-  max-size: 8
-  disband-when-empty: true
   transfer-leader-on-disconnect: true
+  chat-max-length: 512
+
+limits:
+  party-size:
+    default: 4
+    permissions:
+      - permission: "partysystem.limit.default"
+        limit: 4
+      - permission: "partysystem.limit.vip"
+        limit: 6
+      - permission: "partysystem.limit.elite"
+        limit: 8
+      - permission: "partysystem.limit.hera"
+        limit: 12
 
 commands:
   primary: "party"
@@ -665,7 +673,6 @@ commands:
 cooldowns:
   invite: "750ms"
   list: "750ms"
-  status: "1s"
   chat: "250ms"
   togglechat: "1s"
 
@@ -684,7 +691,7 @@ display:
 follow:
   enabled: true
   anti-loop-ttl: "5s"
-  destinations: {}
+  destinations: []
 
 feedback:
   actions: {}
@@ -732,7 +739,7 @@ debug:
 | Mensaje vacio | Rechazar. |
 | Mensaje demasiado largo | Rechazar segun limite configurable. |
 | Redis caido | Mantener runtime local, loggear error y reintentar. |
-| Leader cambia a lobby followable | Mover followers transferibles. |
+| Leader cambia a lobby permitido | Mover followers transferibles. |
 | Leader cambia a arena | No mover followers. |
 | Movimiento causado por PartySystem | Ignorar por anti-loop. |
 | Follower ya esta en destino | No mover y loggear razon. |
@@ -764,7 +771,7 @@ debug:
 7. Comandos Cloud y autocomplete.
 8. Party chat por comando y `PlayerChatEvent`.
 9. Redis snapshots y heartbeat.
-10. Party follow, destinos followables y anti-loop.
+10. Party follow, destinos permitidos y anti-loop.
 11. Listeners de login, disconnect y server connected.
 12. Debug profesional por categorias.
 13. Tests de config, mensajes, lifecycle, edge-cases y snapshots.
