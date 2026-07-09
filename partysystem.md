@@ -131,7 +131,7 @@ PartySystem debe validar cada cambio antes de mover followers.
 Criterios de validacion:
 
 1. El destino debe existir en `follow.destinations`.
-2. El cambio no puede haber sido causado por el propio PartySystem dentro de una ventana anti-loop.
+2. El cambio no puede coincidir con una marca anti-loop previa creada por PartySystem para ese jugador y destino.
 3. Si existe una marca/admission activa de modalidad para ese jugador y destino, PartySystem debe ignorar el cambio.
 
 Con esto, PartySystem no necesita entender como funciona BedWars o SkyWars. Solo necesita saber si el servidor destino esta permitido para party-follow social.

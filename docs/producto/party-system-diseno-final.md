@@ -149,7 +149,7 @@ src/main/java/com/stephanofer/partySystem/
 | `service` | Casos de uso principales y reglas de negocio. |
 | `integration` | Adaptadores hacia ProxySettings, LuckPerms y Redis. |
 | `listener` | Eventos Velocity. |
-| `follow` | Clasificacion de destinos, party follow y proteccion anti-loop. |
+| `follow` | Destinos permitidos, party follow y proteccion anti-loop. |
 | `debug` | Logs estructurados por categoria y razon. |
 | `util` | Utilidades pequenas, solo si realmente se reutilizan. |
 
@@ -472,13 +472,15 @@ Ejemplo:
 
 Sin anti-loop pueden aparecer movimientos duplicados, mensajes duplicados, cascadas de follow o loops con plugins de fallback/redireccion.
 
-La solucion es marcar temporalmente al jugador movido:
+La solucion es marcar temporalmente al jugador movido con el destino esperado:
 
 ```text
-movementCauses[playerId] = PARTY_FOLLOW, ttl=5s
+movementCauses[playerId] = targetServerId, ttl=5s
 ```
 
-Si llega un evento de cambio de servidor mientras esa marca existe, PartySystem no dispara follow por ese evento.
+La marca se consume solo si el `ServerConnectedEvent` coincide con ese destino. Si el jugador cambia manualmente a otro servidor dentro del TTL, ese movimiento no debe tratarse como causado por PartySystem.
+
+Si llega un evento de cambio de servidor para ese mismo jugador y destino, PartySystem consume la marca y no dispara follow por ese evento.
 
 ## Contrato Redis Para Modalidades
 

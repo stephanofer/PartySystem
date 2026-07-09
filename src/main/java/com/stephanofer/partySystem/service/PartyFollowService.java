@@ -40,7 +40,7 @@ public final class PartyFollowService {
         if (!this.config.follow().enabled()) {
             return;
         }
-        if (this.movementCauses.causedByPartySystem(player.getUniqueId())) {
+        if (this.movementCauses.consumePartyFollow(player.getUniqueId(), targetServerId)) {
             this.debug.follow("Party follow skipped", Map.of(
                 "player", player.getUsername(),
                 "target", targetServerId,
@@ -75,13 +75,18 @@ public final class PartyFollowService {
                         this.debug.follow("Party follow skipped", Map.of("player", follower.getUsername(), "target", targetServerId, "reason", "already-at-destination"));
                         return;
                     }
-                    this.movementCauses.markPartyFollow(follower.getUniqueId());
-                    follower.createConnectionRequest(targetServer).connect().thenAccept(result -> this.debug.follow("Party follower moved", Map.of(
-                        "player", follower.getUsername(),
-                        "target", targetServerId,
-                        "success", Boolean.toString(result.isSuccessful()),
-                        "status", result.getStatus().name()
-                    )));
+                    this.movementCauses.markPartyFollow(follower.getUniqueId(), targetServerId);
+                    follower.createConnectionRequest(targetServer).connect().thenAccept(result -> {
+                        if (!result.isSuccessful()) {
+                            this.movementCauses.clearPartyFollow(follower.getUniqueId(), targetServerId);
+                        }
+                        this.debug.follow("Party follower moved", Map.of(
+                            "player", follower.getUsername(),
+                            "target", targetServerId,
+                            "success", Boolean.toString(result.isSuccessful()),
+                            "status", result.getStatus().name()
+                        ));
+                    });
                 }, () -> this.debug.follow("Party follow skipped", Map.of("player", member.username(), "target", targetServerId, "reason", "member-offline")));
             }
         });
